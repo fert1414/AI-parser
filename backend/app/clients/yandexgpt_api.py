@@ -5,41 +5,26 @@ import urllib3
 
 from dotenv import load_dotenv
 
+from backend.app.core.logger import logger
 from backend.app.core.exceptions import ApiError
 
 load_dotenv()
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-class GigaChatClient:
-    def __init__(self, base_url: str, api_key: str | None):
+class YandexGPTClient:
+    def __init__(self, base_url: str, api_key: str | None, folder_id: str | None = None):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
-
-    def _get_access_token(self) -> str:
-        url = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
-
-        payload={
-            "scope": "GIGACHAT_API_PERS"
-        }
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Accept": "application/json",
-            "RqUID": "3d1892c8-c2c4-4cf3-af16-88c3e7a0f2a0",
-            "Authorization": f"Basic {os.getenv('GIGACHAT_API_KEY')}"
-        }
-
-        response = requests.request("POST", url, headers=headers, data=payload, verify=False)
-
-        return response.json().get("access_token", "")
+        self.folder_id = folder_id
 
     def _headers(self) -> dict:
         if not self.api_key:
-            raise ApiError("GIGACHAT_API_KEY is not set.")
+            raise ApiError("OPENAI_API_KEY is not set.")
         
         return {
-            "Authorization": f"Bearer {self._get_access_token()}",
-            "Accept": "application/json",
-            "Content-Type": "application/json"
+            "Authorization": f"Api-Key {self.api_key}",
+            "Content-Type": "application/json",
+            "x-folder-id": self.folder_id,
         }
     
     def _request(
@@ -54,8 +39,8 @@ class GigaChatClient:
     ) -> dict:
         if not self.api_key:
             print(
-                "GIGACHAT_API_KEY is not set. "
-                "Skipping GigaChat model requests."
+                "YANDEXGPT_API_KEY is not set. "
+                "Skipping YandexGPT model requests."
             )
             return {}
         
@@ -84,7 +69,7 @@ class GigaChatClient:
             )
             response.raise_for_status()
         except requests.RequestException as exc:
-            print("GigaChat request failed: ", exc)
+            print("YandexGPT request failed: ", exc)
 
             if getattr(exc, "response", None) is not None:
                 print(f"Response status: {exc.response.status_code,} body: {exc.response.text}")
@@ -97,20 +82,27 @@ class GigaChatClient:
             return response.json()
         except ValueError:
             print(
-                "Failed to parse GigaChat response as JSON. "
+                "Failed to parse YandexGPT response as JSON. "
                 "Response text: ", response.text
             )
             return {"raw_response": response.text}
 
 # ------------------------------------MODELS INFO------------------------------------
-    def get_models(self) -> dict:
-        return self._request("GET", "/models")
 
-    def print_available_models(self) -> None:
-        models = self.get_models()
-        print("GigaChat models:")
-        print(json.dumps(models, indent=4))
+    def get_models(self, tags=None) -> dict:
+        models = self._request("GET", "/models")
 
+        if tags:
+            filtered_models = [
+                model for model in models.get("data", [])
+                if any(tag in model.get("id", "") for tag in tags)
+            ]
+            return filtered_models
+        
+        else:
+            models = [model for model in models.get("data", [])]
+            return models
+        
 # ----------------------------------CHAT COMPLETIONS----------------------------------
     def chat(
         self,
@@ -121,83 +113,76 @@ class GigaChatClient:
         max_tokens: int | None = None
     ) -> dict:
         payload = {
-            "model": model,
+            "modelUri": f"gpt://{self.folder_id}/{model}/latest",
+            "completionOptions": {
+                "stream": False
+            },
             "messages": messages,
         }
 
         if temperature is not None:
-            payload["temperature"] = temperature
+            payload["completionOptions"]["temperature"] = temperature
 
         if max_tokens is not None:
-            payload["max_tokens"] = max_tokens
+            payload["completionOptions"]["maxTokens"] = str(max_tokens)
 
-        return self._request("POST", "/chat/completions", json=payload, timeout=90)
+        return self._request("POST", "/completion", json=payload, timeout=90)
     
     def ask(
         self,
         prompt: str,
-        model: str = "Gigachat-Max",
+        model: str = "yandexgpt",
         system_prompt: str | None = None
     ) -> str:
         messages = []
         if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
+            messages.append({"role": "system", "text": system_prompt})
+        messages.append({"role": "user", "text": prompt})
 
         data = self.chat(model=model, messages=messages)
-
+        
         try:
-            return data["choices"][0]["message"]["content"]
+            return data["result"]["alternatives"][0]["message"]["text"]
         except (KeyError, IndexError, TypeError):
-            print("Unexpected GigaChat response format: ", data)
+            print("Unexpected response format: ", data)
             return ""
         
     def ask_json(
         self,
         prompt: str,
-        model: str,
+        model: str = "yandexgpt",
         system_prompt: str | None = None
     ) -> dict:
         response_text = self.ask(model=model, prompt=prompt, system_prompt=system_prompt)
 
+        if response_text.startswith("```"): 
+            lines = response_text.splitlines()  
+            lines = lines[1:] 
+            
+            if lines and lines[-1].strip() == "```": 
+                lines = lines[:-1] 
+                
+            response_text = "\n".join(lines).strip()
+
         try:
             return json.loads(response_text)
         except json.JSONDecodeError:
-            print("Failed to parse GigaChat response as JSON. Response text: ", response_text)
+            print("Failed to parse YandexGPT response as JSON. Response text: ", response_text)
             return {"raw_response": response_text}
-        
+
 # -------------------------------------EMBEDDINGS-------------------------------------
+
     def create_embeddings(
         self,
         input: str | list[str],
-        model: str = "GigaEmbeddings-3B-2025-09",
+        model: str = "nvidia/llama-nemotron-embed-vl-1b-v2:free"
     ) -> dict:
+        if not input:
+            logger.warning("No input provided for embedding creation.")
+            return {"data": []}
+        
         payload = {
-            "model": model,
-            "input": input
+            "modelUri": f"gpt://{self.folder_id}/{model}/latest",
+            "messages": input
         }
         return self._request("POST", "/embeddings", json=payload, timeout=90)
-    
-    def get_balance(self) -> dict:
-        return self._request("GET", "/balance", timeout=30)
-    
-# ----------------------------------FUNCTION CALLING----------------------------------
-
-    def validate_fuction(self, function_schems: dict) -> dict:
-        return self._request("POST", "/functions/validate", json=function_schems, timeout=30)
-    
-    def chat_with_functions(
-        self,
-        model: str,
-        messages: list[dict],
-        functions: list[dict],
-        function_call: str | dict = "auto",
-    ) -> dict:
-        payload = {
-            "model": model,
-            "messages": messages,
-            "functions": functions,
-            "function_call": function_call
-        }
-
-        return self._request("POST", "/chat/completions", json=payload, timeout=90)

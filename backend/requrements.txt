@@ -4,3 +4,7 @@ feedparser
 python-dateutil
 requests
 urllib3
+trafilatura
+scikit-learn
+
+beautifulsoup4
