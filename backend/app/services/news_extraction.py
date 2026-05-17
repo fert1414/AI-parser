@@ -2,9 +2,9 @@ import feedparser
 from dateutil import parser
 from datetime import datetime, UTC
 
-from backend.app.core.logger import logger
+from app.core.logger import logger
 
-from backend.app.db.RDBMS_db.repositories.news_sources import NewsSourceRepository
+from app.db.RDBMS_db.repositories.news_sources import NewsSourceRepository
 
 class NewsExtractor:
     def __init__(
@@ -53,7 +53,6 @@ class NewsExtractor:
         logger.info("Extracting news sources...")
         news_sources = self._extract_news_sources()
         news = []
-        print(news_sources)
 
         logger.info("Extracting news...")
         for source in news_sources:

@@ -27,6 +27,19 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
 
+  news_agent: 
+    build: 
+      context: ./backend 
+      dockerfile: Dockerfile 
+    container_name: ai_parser_news_service 
+    restart: always 
+    env_file: 
+      - .env 
+    depends_on: 
+      - postgres 
+      - qdrant 
+    command: python -m app.main
+
 volumes:
   postgres_data:
   qdrant_data:

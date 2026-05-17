@@ -1,9 +1,9 @@
 from sklearn.metrics.pairwise import cosine_similarity
 
-from backend.app.core.logger import logger
+from app.core.logger import logger
 
-from backend.app.services.article_extraction import ArticleExtractor
-from backend.app.prompts.filter_prompts import create_filter_prompt
+from app.services.article_extraction import ArticleExtractor
+from app.prompts.filter_prompts import create_filter_prompt
 
 class NewsFilter:
     def __init__(self, AI_client):
@@ -21,7 +21,9 @@ class NewsFilter:
                 "title": article.get("title", ""),
                 "content": content
             })
+            article["content"] = content
 
+        logger.info("Filtering news...")
         filtered_news = []
         for index in range(0, len(news_text), 5):
             batch = news_text[index:index+5]
@@ -33,7 +35,7 @@ class NewsFilter:
 
             all_info_batch = news[index:index+5]
             for article, score in zip(all_info_batch, scores):
-                
+                logger.info(f"Article: {article['title']}, Relevance: {score}")
                 if score >= 0.5:
                     filtered_news.append(article)
 

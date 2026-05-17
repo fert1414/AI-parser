@@ -5,8 +5,8 @@ import urllib3
 
 from dotenv import load_dotenv
 
-from backend.app.core.logger import logger
-from backend.app.core.exceptions import ApiError
+from app.core.logger import logger
+from app.core.exceptions import ApiError
 
 load_dotenv()
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

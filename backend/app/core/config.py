@@ -3,13 +3,16 @@ import os
 from dotenv import load_dotenv
 from dataclasses import dataclass
 
-from backend.app.db.RDBMS_db.connection import get_postgres_db_connection
+from app.db.RDBMS_db.connection import get_postgres_db_connection
 
 load_dotenv()
 
 @dataclass(frozen=True)
 class Settings:
     POSTGRES_DB_CONNECTION = get_postgres_db_connection()
+
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN")
+    TELEGRAM_CHAT_ID: str = os.getenv("TELEGRAM_CHAT_ID")
 
     gigachat_api_url: str = os.getenv(
         "GIGACHAT_API_URL",

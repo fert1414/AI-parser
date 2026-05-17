@@ -1,10 +1,7 @@
-import re
-
 import requests
 import trafilatura
-from bs4 import BeautifulSoup
 
-from backend.app.core.logger import logger
+from app.core.logger import logger
 
 class ArticleExtractor:
     def __init__(self, timeout=15):
@@ -22,12 +19,12 @@ class ArticleExtractor:
             downloaded = trafilatura.fetch_url(url)
             if not downloaded:
                 logger.warning(f"Failed to download article from {url}")
-                return {"full_text": ""}
+                return ""
             
         except requests.RequestException as exc:
             logger.error(f"Failed to fetch article from {url}: {exc}")
-            return {"full_text": ""}
+            return ""
 
         full_text = trafilatura.extract(downloaded)
 
-        return {"full_text": full_text}
+        return full_text

@@ -1,5 +1,5 @@
-from backend.app.core.exceptions import RDBMSQueryError
-from backend.app.core.logger import logger
+from app.core.exceptions import RDBMSQueryError
+from app.core.logger import logger
 
 class NewsSourceRepository:
     def __init__(self, postgres_db_connection):

@@ -1,11 +1,10 @@
 import os
-
 import psycopg
 from psycopg.rows import dict_row
 from dotenv import load_dotenv
 
-from backend.app.core.logger import logger
-from backend.app.core.exceptions import RDBMSConnectionError
+from app.core.logger import logger
+from app.core.exceptions import RDBMSConnectionError
 
 load_dotenv()
 
