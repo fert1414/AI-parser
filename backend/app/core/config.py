@@ -14,6 +14,8 @@ class Settings:
     TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN")
     TELEGRAM_CHAT_ID: str = os.getenv("TELEGRAM_CHAT_ID")
 
+    TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY")
+
     gigachat_api_url: str = os.getenv(
         "GIGACHAT_API_URL",
         "https://gigachat.devices.sberbank.ru/api/v1"

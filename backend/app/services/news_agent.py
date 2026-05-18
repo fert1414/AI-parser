@@ -27,7 +27,12 @@ class NewsAgent:
     def run_news_extracting(self):
         logger.info("Running NewsAgent")
 
-        news_extractor = NewsExtractor(self.postgres_db_connection, self.source_filters, self.news_update_interval)
+        news_extractor = NewsExtractor(
+            self.postgres_db_connection, 
+            self.AI_client, 
+            self.source_filters, 
+            self.news_update_interval
+        )
         news = news_extractor.extract_news()
 
         news_filter = NewsFilter(self.AI_client)

@@ -26,20 +26,23 @@ class NewsSourceRepository:
 
     def insert_news_sources(self, news_items):
         query = """
-            INSERT INTO news_sources (name, url, fetch_method)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (url) DO NOTHING
+            INSERT INTO news_sources (name, portal_url, method_url, fetch_method)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (name, portal_url, method_url) DO NOTHING
         """
 
-        values = [(item["name"], item["url"], item["fetch_method"]) for item in news_items]
+        values = [
+            (item["name"], item["portal_url"], item["method_url"], item["fetch_method"]) 
+            for item in news_items
+        ]
 
         self._run_postgres_query(query, values, execute_values=True)
 
     def get_news_sources(self, source_filters=None):
         query = """
-            SELECT id, name, url, fetch_method
+            SELECT id, name, portal_url, method_url, fetch_method
             FROM news_sources
-            WHERE url = ANY(%s)
+            WHERE method_url = ANY(%s)
         """
 
         return self._run_postgres_query(query, (source_filters,))

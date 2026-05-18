@@ -9,3 +9,4 @@ scikit-learn
 qdrant-client
 python-telegram-bot
 apscheduler
+ddgs

@@ -11,7 +11,8 @@ from app.services.news_agent import NewsAgent
 logger.info("Starting the system...")
 
 source_filters = [
-    "https://rssexport.rbc.ru/rbcnews/news/30/full.rss"
+    # "https://rssexport.rbc.ru/rbcnews/news/30/full.rss"
+    "https://www.rbc.ru/"
 ]
 
 theme_filters = {
@@ -70,4 +71,4 @@ if __name__ == "__main__":
 
     job()
 
-    scheduler.start()
+    # scheduler.start()
